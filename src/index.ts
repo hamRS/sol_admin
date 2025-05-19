@@ -1,4 +1,4 @@
 
 
-const helloName: String = "Doriham";
+const helloName: String = "test";
 console.log(`Hello, world! ${helloName}`);
