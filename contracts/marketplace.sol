@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Marketplace is ERC721, Ownable {
+contract TokenTreasure2025 is ERC721, Ownable {
     struct Listing {
         address owner;
         uint96 price; // Usamos uint96 para optimizar gas
