@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Marketplace is ERC721, Ownable {
+    struct Listing {
+        address owner;
+        uint96 price; // Usamos uint96 para optimizar gas
+        bool isSold;
+        string uri; // URI del NFT
+    }
+
+    mapping(uint256 => Listing) public listings;
+    uint256 public nextTokenId = 1;
+
+    event ItemListed(uint256 indexed tokenId, address owner, uint96 price);
+    event ItemSold(uint256 indexed tokenId, address buyer);
+
+    constructor() ERC721("TokenTreasure2025", "TTRS") Ownable(msg.sender) {}
+
+    // Mint y listado de NFTs
+    function mintAndList(string memory _uri, uint96 _price) external {
+        uint256 tokenId = nextTokenId++;
+        _safeMint(msg.sender, tokenId);
+        listings[tokenId] = Listing(msg.sender, _price, false, _uri);
+        emit ItemListed(tokenId, msg.sender, _price);
+    }
+
+    // Compra de NFT
+    function buy(uint256 tokenId) external payable {
+        Listing storage listing = listings[tokenId];
+        require(!listing.isSold, "NFT ya vendido");
+        require(msg.value >= listing.price, "Fondos insuficientes");
+
+        listing.isSold = true;
+        _transfer(listing.owner, msg.sender, tokenId);
+        payable(listing.owner).transfer(msg.value);
+
+        emit ItemSold(tokenId, msg.sender);
+    }
+
+    // Retiro de fondos por el vendedor
+    function withdraw() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    // Obtener detalles del listado
+    function getListing(
+        uint256 tokenId
+    ) external view returns (address, uint96, bool) {
+        Listing memory listing = listings[tokenId];
+        return (listing.owner, listing.price, listing.isSold);
+    }
+
+    // Función para mintear 10 NFTs iniciales
+    function mintInitialBatch() external onlyOwner {
+        for (uint i = 0; i < 10; i++) {
+            this.mintAndList("https://ipfs.io/example", 0.01 ether);
+        }
+    }
+}
