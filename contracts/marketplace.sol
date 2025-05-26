@@ -54,6 +54,16 @@ contract TokenTreasure2025 is ERC721, Ownable {
         return (listing.owner, listing.price, listing.isSold);
     }
 
+
+    //get Full list of NFTs
+    function getAllListings() external view returns (Listing[] memory) {
+        Listing[] memory allListings = new Listing[](nextTokenId - 1);
+        for (uint256 i = 1; i < nextTokenId; i++) {
+            allListings[i - 1] = listings[i];
+        }
+        return allListings;
+    }
+
     // Función para mintear 10 NFTs iniciales
     function mintInitialBatch() external onlyOwner {
         for (uint i = 0; i < 10; i++) {
