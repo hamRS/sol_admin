@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
-
+import "@openzeppelin/contracts/utils/Strings.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -24,6 +24,7 @@ contract TokenTreasure2025 is ERC721, Ownable {
     function mintAndList(string memory _uri, uint96 _price) external {
         uint256 tokenId = nextTokenId++;
         _safeMint(msg.sender, tokenId);
+
         listings[tokenId] = Listing(msg.sender, _price, false, _uri);
         emit ItemListed(tokenId, msg.sender, _price);
     }
@@ -49,11 +50,10 @@ contract TokenTreasure2025 is ERC721, Ownable {
     // Obtener detalles del listado
     function getListing(
         uint256 tokenId
-    ) external view returns (address, uint96, bool) {
+    ) external view returns (address, uint96, bool, string memory ) {
         Listing memory listing = listings[tokenId];
-        return (listing.owner, listing.price, listing.isSold);
+        return (listing.owner, listing.price, listing.isSold, listing.uri);
     }
-
 
     //get Full list of NFTs
     function getAllListings() external view returns (Listing[] memory) {
@@ -67,7 +67,15 @@ contract TokenTreasure2025 is ERC721, Ownable {
     // Función para mintear 10 NFTs iniciales
     function mintInitialBatch() external onlyOwner {
         for (uint i = 0; i < 10; i++) {
-            this.mintAndList("https://ipfs.io/example", 0.01 ether);
+            uint256 tokenId = nextTokenId++;
+            _safeMint(owner(), tokenId);
+            string memory uri = string.concat(
+                "https://picsum.photos/id/",
+                Strings.toString(i),
+                "/200/300"
+            );
+            listings[tokenId] = Listing(owner(), 0.01 ether, false, uri);
+            emit ItemListed(tokenId, owner(), 0.01 ether);
         }
     }
 }

@@ -2,12 +2,21 @@ import { useState } from 'react';
 import { mintAndListNFT, buyNFT, getListing } from '../utils/contract';
 import { useWallet } from './WalletProviders';
 
+interface Listing {
+    owner: string;
+    price: string;
+    isSold: boolean;
+    uri?: string;
+}
+
 export function NFTMarketplace() {
     const { account, isConnecting, connect } = useWallet();
     const [uri, setUri] = useState('');
     const [price, setPrice] = useState('');
-    const [tokenId, setTokenId] = useState('');
-    const [listing, setListing] = useState<any>(null);
+    const [tokenIdForCheck, setTokenIdForCheck] = useState('');
+    const [tokenIdForBuy, setTokenIdForBuy] = useState('');
+    const [listing, setListing] = useState<Listing | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleMint = async () => {
         if (!account) return;
@@ -22,7 +31,7 @@ export function NFTMarketplace() {
     const handleBuy = async () => {
         if (!account) return;
         try {
-            const tx = await buyNFT(Number(tokenId), price);
+            const tx = await buyNFT(Number(tokenIdForBuy), price);
             console.log('Bought NFT:', tx);
         } catch (error) {
             console.error('Failed to buy:', error);
@@ -31,10 +40,14 @@ export function NFTMarketplace() {
 
     const handleGetListing = async () => {
         try {
-            const listingData = await getListing(Number(tokenId));
+            setIsLoading(true);
+            const listingData = await getListing(Number(tokenIdForCheck));
             setListing(listingData);
         } catch (error) {
             console.error('Failed to get listing:', error);
+            setListing(null);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -83,8 +96,8 @@ export function NFTMarketplace() {
                         <input
                             type="number"
                             placeholder="Token ID"
-                            value={tokenId}
-                            onChange={(e) => setTokenId(e.target.value)}
+                            value={tokenIdForBuy}
+                            onChange={(e) => setTokenIdForBuy(e.target.value)}
                             className="border p-2 mr-2"
                         />
                         <button
@@ -100,22 +113,52 @@ export function NFTMarketplace() {
                         <input
                             type="number"
                             placeholder="Token ID"
-                            value={tokenId}
-                            onChange={(e) => setTokenId(e.target.value)}
+                            value={tokenIdForCheck}
+                            onChange={(e) => setTokenIdForCheck(e.target.value)}
                             className="border p-2 mr-2"
                         />
                         <button
                             onClick={handleGetListing}
-                            className="bg-yellow-500 text-white px-4 py-2 rounded"
+                            disabled={isLoading}
+                            className="bg-yellow-500 text-white px-4 py-2 rounded disabled:opacity-50"
                         >
-                            Check
+                            {isLoading ? 'Loading...' : 'Check'}
                         </button>
 
                         {listing && (
-                            <div className="mt-2">
-                                <p>Owner: {listing.owner}</p>
-                                <p>Price: {listing.price} ETH</p>
-                                <p>Status: {listing.isSold ? 'Sold' : 'Available'}</p>
+                            <div className="mt-4 p-4 border rounded-lg bg-white shadow-sm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold mb-2">Listing Details</h3>
+                                        <p className="mb-2">
+                                            <span className="font-medium">Owner:</span>{' '}
+                                            {listing.owner}
+                                        </p>
+                                        <p className="mb-2">
+                                            <span className="font-medium">Price:</span>{' '}
+                                            {listing.price} ETH
+                                        </p>
+                                        <p className="mb-2">
+                                            <span className="font-medium">Status:</span>{' '}
+                                            <span className={listing.isSold ? 'text-red-500' : 'text-green-500'}>
+                                                {listing.isSold ? 'Sold' : 'Available'}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    {listing.uri && (
+                                        <div className="flex justify-center items-center">
+                                            <img
+                                                src={listing.uri}
+                                                alt={`NFT #${tokenIdForCheck}`}
+                                                className="max-w-full h-auto rounded-lg shadow-md"
+                                                onError={(e) => {
+                                                    const target = e.target as HTMLImageElement;
+                                                    target.src = 'https://via.placeholder.com/300x300?text=Image+Not+Found';
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
